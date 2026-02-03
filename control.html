@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Mando Submarino ESP32</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/paho-mqtt/1.0.1/mqttws31.min.js"></script>
+    <style>
+        body { background-color: #1a1a1a; color: white; font-family: sans-serif; text-align: center; user-select: none; }
+        .container { display: flex; flex-direction: column; align-items: center; gap: 20px; margin-top: 20px; }
+        .btn { width: 120px; height: 120px; border-radius: 50%; border: none; font-size: 18px; font-weight: bold; cursor: pointer; opacity: 0.9; }
+        .btn:active { transform: scale(0.95); opacity: 1; }
+        .green { background: #00b894; color: #fff; } /* Avanzar */
+        .red { background: #d63031; color: #fff; }   /* Retroceder */
+        .blue { background: #0984e3; color: #fff; }   /* Agua */
+        h2 { margin: 5px 0; color: #ccc; font-size: 16px; }
+        #status { padding: 10px; background: #333; border-radius: 5px; margin: 10px; display: inline-block; }
+    </style>
+</head>
+<body>
+
+    <h1>CONTROL ROV</h1>
+    <div id="status">Estado: Desconectado</div>
+
+    <div class="container">
+        <div>
+            <h2>MOVIMIENTO</h2>
+            <button class="btn green" 
+                onmousedown="enviar('submarino/movimiento', '1')" 
+                onmouseup="enviar('submarino/movimiento', '0')"
+                ontouchstart="enviar('submarino/movimiento', '1')" 
+                ontouchend="enviar('submarino/movimiento', '0')">AVANZAR</button>
+            <br><br>
+            <button class="btn red" 
+                onmousedown="enviar('submarino/movimiento', '-1')" 
+                onmouseup="enviar('submarino/movimiento', '0')"
+                ontouchstart="enviar('submarino/movimiento', '-1')" 
+                ontouchend="enviar('submarino/movimiento', '0')">RETROCEDER</button>
+        </div>
+
+        <hr style="width: 80%; border-color: #444;">
+
+        <div>
+            <h2>PROFUNDIDAD</h2>
+            <button class="btn blue" 
+                onmousedown="enviar('submarino/profundidad', '1')" 
+                onmouseup="enviar('submarino/profundidad', '0')"
+                ontouchstart="enviar('submarino/profundidad', '1')" 
+                ontouchend="enviar('submarino/profundidad', '0')">BAJAR (Sumergir)</button>
+            <br><br>
+            <button class="btn blue" 
+                onmousedown="enviar('submarino/profundidad', '-1')" 
+                onmouseup="enviar('submarino/profundidad', '0')"
+                ontouchstart="enviar('submarino/profundidad', '-1')" 
+                ontouchend="enviar('submarino/profundidad', '0')">SUBIR (Emerger)</button>
+        </div>
+    </div>
+
+    <script>
+        // --- CONFIGURACIÓN ---
+        var mqtt_broker_ip = "10.250.204.124";
+        var mqtt_broker_port = 9001;
+        var client_id = "web_" + parseInt(Math.random() * 100, 10);
+
+        // Crear cliente
+        var client = new Paho.MQTT.Client(mqtt_broker_ip, mqtt_broker_port, client_id);
+
+        // Callbacks
+        client.onConnectionLost = function (responseObject) {
+            document.getElementById("status").innerText = "Estado: Desconectado";
+            document.getElementById("status").style.color = "red";
+        };
+
+        // Conectar
+        client.connect({
+            onSuccess: function () {
+                document.getElementById("status").innerText = "Estado: CONECTADO A LA PC";
+                document.getElementById("status").style.color = "#00b894";
+                console.log("Conectado al Broker MQTT");
+            },
+            onFailure: function (message) {
+                document.getElementById("status").innerText = "Fallo: " + message.errorMessage;
+                document.getElementById("status").style.color = "red";
+            }
+        });
+
+        // Función para enviar mensajes
+        function enviar(topico, mensaje) {
+            if(client.isConnected()){
+                message = new Paho.MQTT.Message(mensaje);
+                message.destinationName = topico;
+                client.send(message);
+                console.log("Enviado: " + mensaje + " a " + topico);
+            }
+        }
+    </script>
+</body>
+</html>
